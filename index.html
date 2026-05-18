@@ -16,92 +16,118 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <div id="app">
+<div id="app">
 
-    <!-- HEADER -->
+  <!-- ══════════════════════════════════════
+       TELA DE SELEÇÃO DE USUÁRIO
+  ══════════════════════════════════════ -->
+  <div id="user-screen">
+    <div class="us-logo">⚽</div>
+    <h1 class="us-title">Copa 2026</h1>
+    <p class="us-sub">Figurinhas Panini</p>
+
+    <p class="us-label">Quem está jogando?</p>
+    <div id="user-list"></div>
+
+    <button class="us-new-btn" onclick="showCreateUser()">+ Novo Usuário</button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       APP PRINCIPAL (oculto até login)
+  ══════════════════════════════════════ -->
+  <div id="main-ui">
+
     <header>
-      <h1>⚽ Copa 2026</h1>
+      <button id="user-pill" class="user-pill" onclick="goUserScreen()">
+        <span id="pill-emoji">⚽</span>
+        <span id="pill-name">Usuário</span>
+        <span class="pill-arrow">▾</span>
+      </button>
       <div class="header-stats">
-        <span id="stat-collected" class="stat-chip green">✓ 0/468</span>
-        <span id="stat-duplicate" class="stat-chip orange">🔁 0 rep.</span>
-        <span id="stat-missing"   class="stat-chip red">✗ 468</span>
+        <span id="stat-collected" class="stat-chip green">✓ 0/660</span>
+        <span id="stat-duplicate" class="stat-chip orange">🔁 0</span>
+        <span id="stat-missing"   class="stat-chip red">✗ 660</span>
       </div>
     </header>
 
-    <!-- MAIN CONTENT -->
     <main id="main-content">
-
-      <!-- ALBUM VIEW -->
-      <div id="view-album" class="view active">
-        <!-- rendered by JS -->
-      </div>
-
-      <!-- NEEDED VIEW -->
-      <div id="view-needed" class="view">
-        <!-- rendered by JS -->
-      </div>
-
-      <!-- DUPLICATES VIEW -->
-      <div id="view-duplicates" class="view">
-        <!-- rendered by JS -->
-      </div>
-
-      <!-- STATS VIEW -->
-      <div id="view-stats" class="view">
-        <!-- rendered by JS -->
-      </div>
-
-      <!-- TRADE VIEW -->
-      <div id="view-trade" class="view">
-        <!-- rendered by JS -->
-      </div>
-
+      <div id="view-album"      class="view active"></div>
+      <div id="view-needed"     class="view"></div>
+      <div id="view-duplicates" class="view"></div>
+      <div id="view-stats"      class="view"></div>
+      <div id="view-trade"      class="view"></div>
     </main>
 
-    <!-- BOTTOM NAVIGATION -->
     <nav>
-      <button class="nav-btn active" data-view="album" onclick="showView('album')">
+      <button class="nav-btn active" data-view="album"      onclick="showView('album')">
         <span class="icon">📖</span>Álbum
       </button>
-      <button class="nav-btn" data-view="needed" onclick="showView('needed')">
+      <button class="nav-btn" data-view="needed"     onclick="showView('needed')">
         <span class="icon">❌</span>Faltam
       </button>
       <button class="nav-btn" data-view="duplicates" onclick="showView('duplicates')">
         <span class="icon">🔁</span>Repetidas
       </button>
-      <button class="nav-btn" data-view="stats" onclick="showView('stats')">
+      <button class="nav-btn" data-view="stats"      onclick="showView('stats')">
         <span class="icon">📊</span>Stats
       </button>
-      <button class="nav-btn" data-view="trade" onclick="showView('trade')">
+      <button class="nav-btn" data-view="trade"      onclick="showView('trade')">
         <span class="icon">🤝</span>Trocar
       </button>
     </nav>
 
-  </div>
+  </div><!-- /main-ui -->
 
-  <!-- STICKER MODAL -->
-  <div id="modal-overlay">
-    <div class="modal">
-      <div id="modal-title" class="modal-title">Figurinha #1</div>
-      <div id="modal-name" class="modal-name">Nome</div>
-      <div class="modal-counter">
-        <button class="counter-btn" onclick="modalChange(-1)">−</button>
-        <div id="modal-count" class="counter-num">0</div>
-        <button class="counter-btn" onclick="modalChange(1)">+</button>
-      </div>
-      <div class="modal-labels">
-        <span id="modal-label" style="color:var(--text-muted)">Não tenho</span>
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-danger" onclick="modalClear()">Remover</button>
-        <button class="btn btn-primary" onclick="closeModal()">Fechar</button>
-      </div>
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════
+     MODAL — FIGURINHA
+══════════════════════════════════════ -->
+<div id="modal-overlay">
+  <div class="modal">
+    <div id="modal-title" class="modal-title">Figurinha</div>
+    <div id="modal-name"  class="modal-name">Nome</div>
+    <div class="modal-counter">
+      <button class="counter-btn" onclick="modalChange(-1)">−</button>
+      <div id="modal-count" class="counter-num">0</div>
+      <button class="counter-btn" onclick="modalChange(1)">+</button>
+    </div>
+    <div class="modal-labels">
+      <span id="modal-label" style="color:var(--text-muted)">Não tenho</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger"  onclick="modalClear()">Remover</button>
+      <button class="btn btn-primary" onclick="closeModal()">Fechar</button>
     </div>
   </div>
+</div>
 
-  <!-- DATA -->
-  <script src="js/data.js"></script>
-  <!-- APP -->
-  <script src="js/app.js"></script>
+<!-- ══════════════════════════════════════
+     MODAL — CRIAR / EDITAR USUÁRIO
+══════════════════════════════════════ -->
+<div id="user-modal-overlay" onclick="closeUserModal(event)">
+  <div class="modal user-modal">
+    <div class="modal-title" id="user-modal-heading">Novo Usuário</div>
+
+    <label class="field-label">Nome</label>
+    <input id="user-name-input" class="field-input"
+           type="text" maxlength="20" placeholder="Seu nome"
+           onkeydown="if(event.key==='Enter')confirmUserModal()">
+
+    <label class="field-label">Avatar</label>
+    <div class="avatar-grid" id="emoji-grid"></div>
+
+    <label class="field-label">Cor</label>
+    <div class="color-grid" id="color-grid"></div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-ghost"   onclick="closeUserModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmUserModal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

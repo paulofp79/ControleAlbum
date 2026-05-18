@@ -751,6 +751,34 @@ nav {
 }
 .io-row .btn { flex: 1; }
 
+/* ===== ORACLE CONFIG ===== */
+.oracle-status {
+  font-size: 0.78rem;
+  padding: 7px 10px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.oracle-status.ok  { background: rgba(67,160,71,.18); color: #81C784; border: 1px solid rgba(67,160,71,.35); }
+.oracle-status.off { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+.oracle-test-result {
+  font-size: 0.78rem;
+  min-height: 18px;
+  margin-top: 8px;
+  color: var(--text-muted);
+}
+
+/* ===== SYNC STATUS CHIP ===== */
+.sync-chip {
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 2px 0;
+  min-width: 0;
+  transition: opacity .2s;
+}
+.sync-chip:empty { display: none; }
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

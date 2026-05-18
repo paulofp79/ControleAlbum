@@ -16,7 +16,6 @@ let currentUserId = null;
 function loadUsers() {
   try { users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]'); } catch { users = []; }
   currentUserId = localStorage.getItem(CUR_KEY) || null;
-  // migrate old single-user data
   const oldData = localStorage.getItem('copa2026_counts');
   if (oldData && users.length === 0) {
     const u = makeUser('Meu Álbum', '⚽', COLOR_OPTS[0]);
@@ -35,33 +34,41 @@ function makeUser(name, emoji, color) {
   return { id: 'u' + Date.now() + Math.random().toString(36).slice(2,6), name, emoji, color, created: Date.now() };
 }
 
-function getUser(id) { return users.find(u => u.id === id); }
-
+function getUser(id)   { return users.find(u => u.id === id); }
 function currentUser() { return getUser(currentUserId); }
 
-function selectUser(id) {
+async function selectUser(id) {
   currentUserId = id;
   localStorage.setItem(CUR_KEY, id);
-  loadState();
+  loadState(); // load from localStorage first (instant)
   updateUserPill();
   enterApp();
+  // then fetch from Oracle in background
+  if (isOracleOn()) {
+    setSyncStatus('syncing');
+    try {
+      const oracleCounts = await apiGetCounts(id);
+      if (Object.keys(oracleCounts).length > 0) {
+        counts = oracleCounts;
+        localStorage.setItem(storageKey(), JSON.stringify(counts));
+        refreshAll();
+      }
+      setSyncStatus('ok');
+    } catch { setSyncStatus('error'); }
+  }
 }
 
-function deleteUser(id) {
-  if (!confirm(`Apagar o usuário "${getUser(id)?.name}" e todos os seus dados? Esta ação não pode ser desfeita.`)) return;
+async function deleteUser(id) {
+  if (!confirm(`Apagar o usuário "${getUser(id)?.name}" e todos os seus dados?`)) return;
   localStorage.removeItem(`copa2026_counts_${id}`);
   users = users.filter(u => u.id !== id);
   saveUsers();
-  if (currentUserId === id) {
-    currentUserId = null;
-    localStorage.removeItem(CUR_KEY);
-  }
+  if (isOracleOn()) apiDeleteUser(id).catch(() => {});
+  if (currentUserId === id) { currentUserId = null; localStorage.removeItem(CUR_KEY); }
   renderUserScreen();
 }
 
-function editUser(id) {
-  openUserModal(id);
-}
+function editUser(id) { openUserModal(id); }
 
 // ─────────────────────────────────────────────
 //  STICKER STATE  (per-user)
@@ -78,6 +85,7 @@ function loadState() {
 function saveState() {
   if (!currentUserId) return;
   localStorage.setItem(storageKey(), JSON.stringify(counts));
+  scheduleSave(currentUserId, counts);
 }
 
 function getCount(num)      { return counts[num] || 0; }
@@ -118,14 +126,34 @@ function updateUserPill() {
 // ─────────────────────────────────────────────
 //  USER SCREEN
 // ─────────────────────────────────────────────
-function renderUserScreen() {
+async function renderUserScreen() {
+  // Se Oracle configurado, tenta carregar usuários de lá
+  if (isOracleOn()) {
+    setSyncStatus('syncing');
+    try {
+      const oUsers = await apiGetUsers();
+      if (oUsers.length > 0) {
+        users = oUsers;
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      }
+      setSyncStatus('ok');
+    } catch { setSyncStatus('error'); }
+  }
+  _renderUserList();
+}
+
+function _renderUserList() {
   const list = document.getElementById('user-list');
+  const cloudBadge = isOracleOn()
+    ? `<div style="text-align:center;margin-bottom:12px;font-size:.75rem;color:#43A047;">☁️ Sincronizado com Oracle</div>`
+    : `<div style="text-align:center;margin-bottom:12px;font-size:.75rem;color:var(--text-muted);">💾 Armazenamento local (configure Oracle na aba Trocar)</div>`;
+
   if (users.length === 0) {
-    list.innerHTML = `<p style="text-align:center;color:var(--text-muted);font-size:.85rem;padding:12px 0">
+    list.innerHTML = cloudBadge + `<p style="text-align:center;color:var(--text-muted);font-size:.85rem;padding:12px 0">
       Nenhum usuário ainda. Crie o primeiro abaixo!</p>`;
     return;
   }
-  list.innerHTML = users.map(u => {
+  list.innerHTML = cloudBadge + users.map(u => {
     const uc = getUserCounts(u.id);
     const pct = Math.round((uc.collected / TOTAL_STICKERS) * 100);
     return `<div class="user-card" onclick="selectUser('${u.id}')">
@@ -225,16 +253,20 @@ function hexToRgb(hex) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function confirmUserModal() {
+async function confirmUserModal() {
   const name = document.getElementById('user-name-input').value.trim();
   if (!name) { document.getElementById('user-name-input').focus(); return; }
 
   if (editingUserId) {
     const u = getUser(editingUserId);
-    if (u) { u.name = name; u.emoji = selectedEmoji; u.color = selectedColor; }
+    if (u) {
+      u.name = name; u.emoji = selectedEmoji; u.color = selectedColor;
+      if (isOracleOn()) apiUpdateUser(u).catch(() => {});
+    }
   } else {
     const u = makeUser(name, selectedEmoji, selectedColor);
     users.push(u);
+    if (isOracleOn()) apiCreateUser(u).catch(() => {});
   }
   saveUsers();
   document.getElementById('user-modal-overlay').classList.remove('open');
@@ -486,7 +518,68 @@ function renderTrade() {
     <button class="btn btn-danger" onclick="resetConfirm()" style="width:100%;margin-top:8px">🗑 Apagar meus dados</button>
   </div>`;
 
+  // Oracle Cloud config
+  const cfg = getOracleCfg();
+  const on  = isOracleOn();
+  html += `<div class="trade-section">
+    <h3>☁️ Oracle Cloud — Sincronização</h3>
+    <div class="oracle-status ${on ? 'ok' : 'off'}">
+      ${on ? `Conectado · <span style="word-break:break-all">${escHtml(cfg.url)}</span>` : 'Não configurado · dados salvos apenas localmente'}
+    </div>
+    <label class="field-label" style="margin-top:12px">URL do ORDS</label>
+    <input id="oracle-url" class="field-input" type="url"
+      placeholder="https://xxx.adb.region.oraclecloudapps.com/ords/copa2026"
+      value="${escHtml(cfg.url || '')}">
+    <label class="field-label">Usuário (opcional)</label>
+    <input id="oracle-user" class="field-input" type="text"
+      placeholder="ADMIN"
+      value="${escHtml(cfg.user || '')}">
+    <label class="field-label">Senha (opcional)</label>
+    <input id="oracle-pass" class="field-input" type="password"
+      placeholder="••••••••"
+      value="${escHtml(cfg.pass || '')}">
+    <div id="oracle-test-result" class="oracle-test-result"></div>
+    <div class="io-row" style="margin-top:10px">
+      <button class="btn btn-ghost" onclick="testOracleConfig()">🔌 Testar</button>
+      <button class="btn btn-primary" onclick="saveOracleConfig()">💾 Salvar</button>
+    </div>
+    ${on ? `<button class="btn btn-danger" style="width:100%;margin-top:8px" onclick="clearOracleConfig()">✕ Desconectar Oracle</button>` : ''}
+    <p style="color:var(--text-muted);font-size:.72rem;margin-top:10px;line-height:1.5">
+      Configure para sincronizar entre dispositivos via Oracle Autonomous Database (Always Free).
+      Os dados ficam no seu banco — nenhum servidor intermediário.
+    </p>
+  </div>`;
+
   container.innerHTML = html;
+}
+
+function saveOracleConfig() {
+  const url  = (document.getElementById('oracle-url')?.value  || '').trim();
+  const user = (document.getElementById('oracle-user')?.value || '').trim();
+  const pass = (document.getElementById('oracle-pass')?.value || '').trim();
+  saveOracleCfg({ url, user, pass });
+  renderTrade();
+}
+
+async function testOracleConfig() {
+  const url  = (document.getElementById('oracle-url')?.value  || '').trim();
+  const user = (document.getElementById('oracle-user')?.value || '').trim();
+  const pass = (document.getElementById('oracle-pass')?.value || '').trim();
+  saveOracleCfg({ url, user, pass });
+  const el = document.getElementById('oracle-test-result');
+  if (el) { el.textContent = '🔄 Testando conexão…'; el.style.color = 'var(--text-muted)'; }
+  const result = await apiTest();
+  if (el) {
+    el.textContent = result.ok ? '✓ Conexão bem-sucedida!' : `✗ ${result.error}`;
+    el.style.color = result.ok ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+function clearOracleConfig() {
+  if (!confirm('Desconectar Oracle? Os dados locais permanecem intactos.')) return;
+  saveOracleCfg({ url: '', user: '', pass: '' });
+  setSyncStatus('idle');
+  renderTrade();
 }
 
 function shareList(type) {

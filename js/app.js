@@ -45,22 +45,42 @@ function renderHeader() {
 }
 
 // ===== STICKER CARD =====
+function shortLabel(s) {
+  if (s.type === 'badge') return 'Escudo';
+  if (s.type === 'group-header') return s.name.replace(' — Cabeçalho','');
+  if (s.type === 'stadium' || s.type === 'city') return s.name;
+  if (s.type === 'special' || s.type === 'star') return s.name.replace(/^.+— /,'').replace(/^[^ ]+ /,'');
+  // player: return last name (last word)
+  const parts = s.name.replace(/^[^\s]+ /,'').split(' ');
+  return parts[parts.length - 1];
+}
+
 function stickerCard(s) {
   const c = getCount(s.id);
   const cls = c === 0 ? '' : c === 1 ? 'collected' : 'duplicate';
-  const flagOrIcon = s.type === 'special' ? '🏆'
+
+  const isTeam = s.teamCode && s.teamNum !== null;
+  const topCode  = isTeam ? s.teamCode : '';
+  const mainNum  = isTeam ? s.teamNum : `#${s.id}`;
+  const flag = s.teamCode ? TEAMS[s.teamCode].flag
+    : s.type === 'special' ? '🏆'
     : s.type === 'stadium' ? '🏟️'
-    : s.type === 'city' ? '📍'
+    : s.type === 'city'    ? '📍'
     : s.type === 'group-header' ? '📋'
-    : s.type === 'star' ? '⭐'
-    : s.teamCode ? TEAMS[s.teamCode].flag : '⚽';
-  const statusTxt = c === 0 ? '' : c === 1 ? '✓' : `✓ +${c - 1}`;
-  const dupBadge = c > 1 ? `<div class="dup-badge">${c - 1}</div>` : '';
+    : s.type === 'star'    ? '⭐' : '⚽';
+  const label = shortLabel(s);
+  const dupBadge = c > 1 ? `<span class="dup-badge">+${c-1}</span>` : '';
+  const overlay  = c > 0  ? `<div class="card-overlay ${c > 1 ? 'dup' : 'got'}"></div>` : '';
+  const check    = c > 0  ? `<div class="card-check">${c > 1 ? '🔁' : '✓'}</div>` : '';
+
   return `<div class="sticker-card ${cls}" data-id="${s.id}" onclick="openModal(${s.id})">
+    ${overlay}
     ${dupBadge}
-    <div class="sticker-num">${s.id}</div>
-    <div class="sticker-flag">${flagOrIcon}</div>
-    <div class="sticker-status">${statusTxt}</div>
+    ${topCode ? `<div class="s-code">${topCode}</div>` : ''}
+    <div class="s-num">${mainNum}</div>
+    <div class="s-flag">${flag}</div>
+    <div class="s-name">${label}</div>
+    ${check}
   </div>`;
 }
 

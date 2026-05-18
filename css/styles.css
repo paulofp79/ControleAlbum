@@ -191,63 +191,95 @@ nav {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   cursor: pointer;
   position: relative;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: transform .1s, border-color .15s, background .15s;
+  transition: transform .1s, border-color .15s;
   overflow: hidden;
-  padding: 4px 2px;
+  padding: 4px 3px 3px;
 }
 .sticker-card:active { transform: scale(.95); }
+.sticker-card.collected { border-color: var(--green); }
+.sticker-card.duplicate { border-color: var(--orange); }
 
-.sticker-card.collected {
-  border-color: var(--green);
-  background: linear-gradient(160deg, #1B5E20 0%, #1E2F45 100%);
+/* tint overlay */
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
-.sticker-card.duplicate {
-  border-color: var(--orange);
-  background: linear-gradient(160deg, #7A3F00 0%, #1E2F45 100%);
-}
+.card-overlay.got { background: rgba(76,175,80,.18); }
+.card-overlay.dup { background: rgba(251,140,0,.18); }
 
-.sticker-num {
-  font-size: 0.65rem;
-  font-weight: 700;
+/* top: team code */
+.s-code {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: .5px;
   color: var(--text-muted);
   line-height: 1;
+  text-transform: uppercase;
+  align-self: flex-start;
 }
-.sticker-card.collected .sticker-num,
-.sticker-card.duplicate .sticker-num { color: rgba(255,255,255,.6); }
+.sticker-card.collected .s-code { color: #81C784; }
+.sticker-card.duplicate .s-code { color: #FFB74D; }
 
-.sticker-flag {
+/* center: big number */
+.s-num {
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: -1px;
+}
+
+/* flag emoji */
+.s-flag {
   font-size: 1.3rem;
   line-height: 1;
-  margin: 2px 0;
 }
-.sticker-status {
-  font-size: 0.7rem;
+
+/* bottom: player name */
+.s-name {
+  font-size: 0.5rem;
   font-weight: 700;
-  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--text-muted);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  line-height: 1.1;
 }
-.sticker-card.collected .sticker-status { color: #81C784; }
-.sticker-card.duplicate .sticker-status { color: #FFB74D; }
+
+/* check / repeat icon */
+.card-check {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #81C784;
+  line-height: 1;
+}
+.sticker-card.duplicate .card-check { color: #FFB74D; }
 
 .dup-badge {
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: 2px;
+  right: 2px;
   background: var(--orange);
   color: #fff;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  font-size: 0.6rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  border-radius: 6px;
+  padding: 1px 3px;
+  font-size: 0.5rem;
+  font-weight: 800;
+  line-height: 1.3;
+  z-index: 2;
 }
 
 /* ===== TEAM SUBSECTION ===== */
